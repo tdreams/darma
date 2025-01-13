@@ -37,20 +37,13 @@ export default function Header() {
             {/* TODO: Add session Hooks Here!!*/}
             <li>
               <Link to="/login">
-                <Button
-                  variant={"outline"}
-                  className="rounded-[5px] hover:bg-gray-400"
-                >
-                  Logins
-                </Button>
+                <Button variant={"outline"}>Logins</Button>
               </Link>
             </li>
 
             <li>
               <Link to="/register">
-                <Button className="bg-black text-white rounded-[5px] hover:bg-gray-400">
-                  Register
-                </Button>
+                <Button>Register</Button>
               </Link>
             </li>
           </ul>
