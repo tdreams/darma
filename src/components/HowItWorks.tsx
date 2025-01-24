@@ -1,17 +1,48 @@
 import { steps } from "@/utils/howItWorksContent";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
 export default function HowItWorks() {
   const [activeStep, setActiveStep] = useState(0);
 
+  const circleVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 120,
+        damping: 10,
+      },
+    },
+  };
+
+  const stepDetailVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+      },
+    },
+  };
+
   return (
     <section
       id="how-it-works"
       className="py-24 bg-gradient-to-br from-white via-blue-50 to-white 
-      min-h-screen flex items-center justify-center"
+      min-h-screen flex items-center justify-center relative overflow-hidden"
     >
-      <div className="container mx-auto px-4 max-w-6xl relative">
+      {/* Subtle Background Animation */}
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 
+        opacity-30 animate-gradient-x pointer-events-none"
+      />
+
+      <div className="container mx-auto px-4 max-w-6xl relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -26,7 +57,7 @@ export default function HowItWorks() {
         >
           <h2
             className="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent 
-            bg-gradient-to-r from-blue-600 to-purple-600 mb-4"
+            bg-gradient-to-br from-blue-600 to-blue-800"
           >
             Journey of Returns
           </h2>
@@ -36,7 +67,23 @@ export default function HowItWorks() {
         </motion.div>
 
         {/* Circular Layout */}
-        <div className="relative mx-auto w-full max-w-[600px] aspect-square">
+        <motion.div
+          variants={circleVariants}
+          initial="hidden"
+          animate="visible"
+          className="relative mx-auto w-full max-w-[600px] aspect-square"
+        >
+          {/* Rotating Border */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            className="absolute inset-0 border-2 border-blue-200/50 rounded-full"
+          />
+
           {/* Central Hub */}
           <div className="absolute inset-0 flex items-center justify-center z-20">
             <motion.div
@@ -46,16 +93,15 @@ export default function HowItWorks() {
                 ease: "easeInOut",
                 repeat: Infinity,
               }}
-              className="w-48 md:w-64 h-48 md:h-64 bg-gradient-to-br from-blue-500 to-purple-600 
-              rounded-full shadow-lg relative"
+              className="w-48 md:w-64 h-48 md:h-64 bg-gradient-to-br from-blue-600 to-blue-800
+              rounded-full shadow-2xl relative flex items-center justify-center"
             >
-              {/* Render Steps' Icons Around the Circle */}
+              {/* Step Icons */}
               {steps.map((step, index) => {
                 const totalSteps = steps.length;
-                const angle = (360 / totalSteps) * index; // Divide the circle evenly
-                const radius = 140; // Distance from the center
+                const angle = (360 / totalSteps) * index;
+                const radius = 200;
 
-                // Place the icons in a circular layout
                 return (
                   <motion.div
                     key={index}
@@ -72,13 +118,15 @@ export default function HowItWorks() {
                       }px)`,
                       transform: `translate(-50%, -50%)`,
                     }}
-                    className="flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white 
-                    rounded-full shadow-lg transition-transform hover:scale-110"
+                    className={`flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white 
+                    rounded-full shadow-lg cursor-pointer ${
+                      activeStep === index ? "ring-4 ring-blue-300" : ""
+                    }`}
                     onClick={() => setActiveStep(index)}
                   >
                     <div
                       className="w-12 h-12 md:w-16 md:h-16 
-                      bg-gradient-to-br from-blue-500 to-purple-600 
+                      bg-gradient-to-br from-blue-600 to-blue-800 
                       rounded-full flex items-center justify-center"
                     >
                       <step.icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
@@ -87,33 +135,58 @@ export default function HowItWorks() {
                 );
               })}
 
-              {/* Central Text */}
-              <div className="absolute inset-0 flex items-center justify-center bg-white rounded-full shadow-inner">
-                <span
-                  className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent 
-                  bg-gradient-to-r from-blue-600 to-purple-600"
-                >
-                  Returns
-                </span>
+              {/* Central Content */}
+              <div className="absolute inset-0 flex items-center justify-center bg-transparent rounded-full overflow-hidden">
+                <AnimatePresence mode="wait">
+                  {steps[activeStep]?.illustration ? (
+                    <motion.img
+                      key={steps[activeStep]?.illustration}
+                      src={steps[activeStep]?.illustration}
+                      alt={steps[activeStep]?.title}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.5 }}
+                      className="absolute inset-0 w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.5 }}
+                      className="text-white text-lg md:text-xl font-bold text-center"
+                    >
+                      {steps[activeStep]?.title || "No Illustration"}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Active Step Details */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          key={activeStep}
-          className="mt-16 text-center"
-        >
-          <h3 className="text-2xl font-bold text-blue-800">
-            {steps[activeStep]?.title}
-          </h3>
-          <p className="text-gray-600 text-lg mt-2 max-w-xl mx-auto">
-            {steps[activeStep]?.description}
-          </p>
-        </motion.div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeStep}
+            variants={stepDetailVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            className="mt-16 text-center"
+          >
+            <div className="flex justify-center items-center w-10 h-10 mx-auto bg-blue-100 rounded-full text-blue-800 font-bold">
+              {activeStep + 1}
+            </div>
+            <h3 className="text-2xl font-bold text-blue-800 mt-2">
+              {steps[activeStep]?.title}
+            </h3>
+            <p className="text-gray-600 text-lg mt-2 max-w-xl mx-auto">
+              {steps[activeStep]?.description}
+            </p>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </section>
   );
