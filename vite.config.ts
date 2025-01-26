@@ -10,4 +10,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    port: Number(process.env.PORT) || 3000, // Convert PORT to a number and fallback to 3000
+    strictPort: true, // Ensure the app fails if the port is unavailable
+  },
 });
