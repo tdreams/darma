@@ -11,7 +11,13 @@ export default defineConfig({
     },
   },
   server: {
-    port: Number(process.env.PORT) || 3000, // Convert PORT to a number and fallback to 3000
-    strictPort: true, // Ensure the app fails if the port is unavailable
+    host: true, // Add this to listen on all addresses
+    port: Number(process.env.PORT) || 3000,
+    strictPort: true,
+  },
+  preview: {
+    host: true, // Add this for preview server
+    port: Number(process.env.PORT) || 3000,
+    strictPort: true,
   },
 });
