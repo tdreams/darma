@@ -66,5 +66,5 @@ export const item = {
 };
 
 export const imageCar = {
-  illustration: "./src/assets/images/features.png",
+  illustration: "/images/features.png",
 };
