@@ -30,7 +30,10 @@ export default function NotifyMe() {
     setZipCode("");
   };
   return (
-    <section className="py-24 bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+    <section
+      id="notify-me"
+      className="py-24 bg-gradient-to-br from-blue-600 to-blue-800 text-white"
+    >
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
