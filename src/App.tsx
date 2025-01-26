@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { SignedIn, useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/clerk-react";
 
 // Import components
 import Features from "./components/Features";
@@ -12,6 +12,7 @@ import ReturnForm from "./components/ReturnForm";
 import FAQ from "./components/FAQ";
 import SignUpPage from "./components/SignUpPage";
 import SignInPage from "./components/SignInPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   const { isLoaded } = useAuth();
@@ -43,17 +44,18 @@ function App() {
             }
           />
           <Route path="/login" element={<SignInPage />} />
-          <Route path="/register" element={<SignUpPage />} />
+          <Route path="/register/*" element={<SignUpPage />} />
 
           {/* Protected Routes */}
           <Route
             path="/schedule-return"
             element={
-              <SignedIn>
+              <ProtectedRoute>
                 <ReturnForm />
-              </SignedIn>
+              </ProtectedRoute>
             }
           />
+
           <Route path="/faq" element={<FAQ />} />
 
           {/* Catch-all Route */}
