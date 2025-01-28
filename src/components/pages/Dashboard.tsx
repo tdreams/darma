@@ -1,7 +1,5 @@
-import { Button } from "../ui/button";
-import { MapPin, PlusCircle, Calendar, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { container, item } from "@/utils/dashboardContents";
+import { container } from "@/utils/dashboardContents";
 import WelcomeCard from "../dashboard/WelcomeCard";
 import SideBar from "../dashboard/SideBar";
 
