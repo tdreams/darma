@@ -1,11 +1,20 @@
-import { Package } from "lucide-react";
+import { Package, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { HashLink } from "react-router-hash-link";
 import { useAuth, UserButton, SignedIn, SignedOut } from "@clerk/clerk-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Header() {
-  const { isLoaded, signOut } = useAuth();
+  const { isLoaded } = useAuth();
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const notifications = [
+    // Add your notifications here
+    // Example:
+    { id: 1, message: "Your return has been processed", date: "2024-03-20" },
+  ];
 
   if (!isLoaded) {
     return (
@@ -18,7 +27,7 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white shadow-sm">
+    <header className="bg-white shadow-sm relative">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <HashLink to="/" className="flex items-center space-x-2">
           <Package className="h-8 w-8 text-blue-600" />
@@ -73,25 +82,81 @@ export default function Header() {
 
             <SignedIn>
               <li>
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      await signOut();
-                    } catch (err) {
-                      console.error("Error during sign-out:", err);
-                    }
-                  }}
+                <button
+                  className="relative p-2 text-gray-400 hover:text-gray-500"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  aria-label="Notifications"
                 >
-                  Logout
-                </Button>
+                  <Bell className="w-6 h-6" />
+                  {notifications.length > 0 && (
+                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400" />
+                  )}
+                </button>
               </li>
               <li>
-                <UserButton />
+                <UserButton
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8",
+                    },
+                  }}
+                />
               </li>
             </SignedIn>
           </ul>
         </nav>
+
+        {/* Notifications Panel */}
+        <AnimatePresence>
+          {showNotifications && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-50 z-40"
+                onClick={() => setShowNotifications(false)}
+              />
+
+              {/* Notifications Panel */}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute right-4 top-16 w-80 bg-white rounded-lg shadow-lg z-50"
+              >
+                <div className="p-4 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Notifications
+                  </h3>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto">
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className="p-4 border-b border-gray-100 hover:bg-gray-50"
+                      >
+                        <p className="text-sm text-gray-600">
+                          {notification.message}
+                        </p>
+                        <span className="text-xs text-gray-400 mt-1">
+                          {notification.date}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">
+                      No new notifications
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </header>
   );

@@ -13,6 +13,7 @@ import FAQ from "./components/FAQ";
 import SignUpPage from "./components/SignUpPage";
 import SignInPage from "./components/SignInPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Dashboard from "./components/pages/Dashboard";
 
 function App() {
   const { isLoaded } = useAuth();
@@ -47,6 +48,14 @@ function App() {
           <Route path="/register/*" element={<SignUpPage />} />
 
           {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/schedule-return"
             element={

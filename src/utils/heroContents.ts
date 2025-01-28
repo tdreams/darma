@@ -5,6 +5,6 @@ export const heroContnent = {
     "Returning your package is our Dharma. We make the process simple, efficient, and stress-free.",
   button: {
     text: "Get Started",
-    link: "/schedule-return",
+    link: "/dashboard",
   },
 };
