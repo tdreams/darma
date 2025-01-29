@@ -1,4 +1,4 @@
-import { REGISTER } from "@/utils/clerkConf";
+import { REDIRECT_URL, REGISTER } from "@/utils/clerkConf";
 import { SignIn } from "@clerk/clerk-react";
 
 export default function SignInPage() {
@@ -7,6 +7,7 @@ export default function SignInPage() {
       <SignIn
         routing="hash"
         signUpUrl={REGISTER}
+        forceRedirectUrl={REDIRECT_URL}
         appearance={{
           elements: {
             card: "shadow-lg rounded-lg",

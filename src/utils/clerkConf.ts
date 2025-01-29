@@ -9,6 +9,6 @@ export function getPublishableKey() {
 }
 
 export const SIGN_IN_URL = import.meta.env.VITE_SIGN_IN_URL || "/login";
-export const REDIRECT_URL = import.meta.env.VITE_REDIRECT_URL || "/";
+export const REDIRECT_URL = import.meta.env.VITE_REDIRECT_URL || "/dashboard";
 
 export const REGISTER = import.meta.env.VITE_REDIRECT_URL || "/register";

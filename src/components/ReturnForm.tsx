@@ -1,24 +1,17 @@
-import React, { useState } from "react";
-import { useForm, SubmitHandler, UseFormSetValue } from "react-hook-form";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
 
 // Your existing UI components (adjust imports as needed):
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Calendar } from "./ui/calendar";
-import { Checkbox } from "./ui/checkbox";
-import { FormData } from "@/utils/returnFormContent";
+
+import { FormData, STEP_VALIDATION_FIELDS } from "@/utils/returnFormContent";
+import { Step1PersonalInfo } from "./returnForm/steps/Step1PersonalInfo";
+import { Step2Address } from "./returnForm/steps/Step2Address ";
+import { Step3ItemDetails } from "./returnForm/steps/Step3ItemDetails";
+import { Step4PickupInfo } from "./returnForm/steps/Step4PickupInfo";
+import { Step5Review } from "./returnForm/steps/Step5Review";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { step4Schema } from "@/utils/validation";
 
 export default function MultiStepReturnForm() {
   /**
@@ -39,6 +32,12 @@ export default function MultiStepReturnForm() {
     formState: { errors },
   } = useForm<FormData>({
     mode: "onBlur", // Validate on blur (or change as you prefer)
+    resolver: zodResolver(step4Schema),
+    defaultValues: {
+      itemSize: undefined,
+      timeSlot: undefined,
+      termsAccepted: false,
+    },
   });
 
   // For file upload preview
@@ -52,6 +51,7 @@ export default function MultiStepReturnForm() {
    * and all validations pass.
    */
   const onSubmit: SubmitHandler<FormData> = (data) => {
+    // Simulate API call
     console.log("Final form data:", data);
     setFormSubmitted(true);
   };
@@ -60,39 +60,25 @@ export default function MultiStepReturnForm() {
    * goNextStep is triggered on "Next" button click. We only validate
    * fields relevant to the current step.
    */
-  const goNextStep = async () => {
-    // Decide which fields to validate for the current step:
-    let fieldsToValidate: (keyof FormData)[] = [];
 
-    if (currentStep === 1) {
-      fieldsToValidate = ["fullName", "email", "phone"];
-    } else if (currentStep === 2) {
-      fieldsToValidate = ["street", "city", "state", "zipCode"];
-    } else if (currentStep === 3) {
-      fieldsToValidate = ["itemSize", "qrCode"];
-      // additionalNotes is optional
-    } else if (currentStep === 4) {
-      fieldsToValidate = ["pickupDate", "timeSlot", "termsAccepted"];
-    }
+  // Decide which fields to validate for the current step:
+  const goNextStep = async () => {
+    const fieldsToValidate =
+      STEP_VALIDATION_FIELDS[
+        currentStep as keyof typeof STEP_VALIDATION_FIELDS
+      ];
 
     const valid = await trigger(fieldsToValidate);
 
-    if (!valid) {
-      // If validation fails, do not proceed
-      return;
-    }
-    // If validation succeeds, go to next step or submit if it's the last step
+    if (!valid) return;
+
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     } else {
-      // If at final step, call handleSubmit to submit the entire form
       handleSubmit(onSubmit)();
     }
   };
 
-  /**
-   * goPrevStep -> handle "Back" button
-   */
   const goPrevStep = () => {
     setCurrentStep(currentStep - 1);
   };
@@ -146,6 +132,7 @@ export default function MultiStepReturnForm() {
             register={register}
             errors={errors}
             watchQRCode={watchQRCode}
+            setValue={setValue}
           />
         )}
 
@@ -173,357 +160,6 @@ export default function MultiStepReturnForm() {
           </Button>
         </div>
       </form>
-    </div>
-  );
-}
-
-/* ===========================================
-   STEP 1: PERSONAL INFO
-   =========================================== */
-function Step1PersonalInfo({
-  register,
-  errors,
-}: {
-  register: any;
-  errors: any;
-}) {
-  return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Personal Information</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Full Name */}
-        <div>
-          <Label htmlFor="fullName">Full Name</Label>
-          <Input
-            id="fullName"
-            placeholder="Your name"
-            {...register("fullName", { required: "Full name is required" })}
-          />
-          {errors.fullName && (
-            <p className="text-red-500 text-sm">{errors.fullName.message}</p>
-          )}
-        </div>
-
-        {/* Email */}
-        <div>
-          <Label htmlFor="email">Email Address</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="me@example.com"
-            {...register("email", {
-              required: "Email is required",
-              pattern: {
-                value: /^\S+@\S+$/i,
-                message: "Invalid email address",
-              },
-            })}
-          />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email.message}</p>
-          )}
-        </div>
-
-        {/* Phone */}
-        <div>
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input
-            id="phone"
-            placeholder="(123) 456-7890"
-            {...register("phone", { required: "Phone number is required" })}
-          />
-          {errors.phone && (
-            <p className="text-red-500 text-sm">{errors.phone.message}</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===========================================
-   STEP 2: ADDRESS
-   =========================================== */
-function Step2Address({ register, errors }: { register: any; errors: any }) {
-  return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Address</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Street */}
-        <div>
-          <Label htmlFor="street">Street Address</Label>
-          <Input
-            id="street"
-            placeholder="123 Main St"
-            {...register("street", { required: "Street address is required" })}
-          />
-          {errors.street && (
-            <p className="text-red-500 text-sm">{errors.street.message}</p>
-          )}
-        </div>
-
-        {/* City */}
-        <div>
-          <Label htmlFor="city">City</Label>
-          <Input
-            id="city"
-            placeholder="New York"
-            {...register("city", { required: "City is required" })}
-          />
-          {errors.city && (
-            <p className="text-red-500 text-sm">{errors.city.message}</p>
-          )}
-        </div>
-
-        {/* State */}
-        <div>
-          <Label htmlFor="state">State</Label>
-          <Input
-            id="state"
-            placeholder="NY"
-            {...register("state", { required: "State is required" })}
-          />
-          {errors.state && (
-            <p className="text-red-500 text-sm">{errors.state.message}</p>
-          )}
-        </div>
-
-        {/* Zip Code */}
-        <div>
-          <Label htmlFor="zipCode">ZIP Code</Label>
-          <Input
-            id="zipCode"
-            placeholder="12345"
-            {...register("zipCode", {
-              required: "ZIP code is required",
-              pattern: {
-                value: /^\d{5}(-\d{4})?$/,
-                message: "Invalid ZIP code",
-              },
-            })}
-          />
-          {errors.zipCode && (
-            <p className="text-red-500 text-sm">{errors.zipCode.message}</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===========================================
-   STEP 3: ITEM DETAILS
-   =========================================== */
-function Step3ItemDetails({
-  register,
-  errors,
-  watchQRCode,
-}: {
-  register: any;
-  errors: any;
-  watchQRCode: FileList | undefined;
-}) {
-  return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Item Details</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Item Size */}
-        <div>
-          <Label htmlFor="itemSize">Item Size</Label>
-          <Select
-            onValueChange={(value) => register("itemSize").onChange(value)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select item size" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="small">Small</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="large">Large</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.itemSize && (
-            <p className="text-red-500 text-sm">{errors.itemSize.message}</p>
-          )}
-        </div>
-
-        {/* Additional Notes (optional) */}
-        <div>
-          <Label htmlFor="additionalNotes">Additional Notes</Label>
-          <Textarea
-            id="additionalNotes"
-            placeholder="Any special instructions"
-            {...register("additionalNotes")}
-          />
-        </div>
-
-        {/* QR Code Upload */}
-        <div className="md:col-span-2">
-          <Label htmlFor="qrCode">Amazon Returns QR Code</Label>
-          <Input
-            id="qrCode"
-            type="file"
-            accept="image/*"
-            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0
-                       file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
-                       hover:file:bg-blue-100 mt-1"
-            {...register("qrCode", { required: "QR code is required" })}
-          />
-          {errors.qrCode && (
-            <p className="text-red-500 text-sm">{errors.qrCode.message}</p>
-          )}
-          {watchQRCode && watchQRCode[0] && (
-            <p className="text-sm text-gray-500 mt-1">
-              File selected: {watchQRCode[0].name}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ===========================================
-   STEP 4: PICKUP INFO & TERMS
-   =========================================== */
-function Step4PickupInfo({
-  register,
-  errors,
-  setValue,
-  calendarDate,
-  setCalendarDate,
-}: {
-  register: any;
-  errors: any;
-  setValue: UseFormSetValue<FormData>;
-  calendarDate: Date | undefined;
-  setCalendarDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
-}) {
-  return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Pickup Info & Terms</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Pickup Date */}
-        <div>
-          <Label>Preferred Pickup Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={`w-full justify-start text-left font-normal mt-1 ${
-                  !calendarDate && "text-muted-foreground"
-                }`}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {calendarDate ? format(calendarDate, "PPP") : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={calendarDate}
-                onSelect={(selectedDate) => {
-                  setCalendarDate(selectedDate || undefined);
-                  setValue("pickupDate", selectedDate);
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          {errors.pickupDate && (
-            <p className="text-red-500 text-sm">{errors.pickupDate.message}</p>
-          )}
-        </div>
-
-        {/* Time Slot */}
-        <div>
-          <Label htmlFor="timeSlot">Time Slot</Label>
-          <Select onValueChange={(val) => setValue("timeSlot", val)}>
-            <SelectTrigger className="w-full mt-1">
-              <SelectValue placeholder="Select a time slot" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="morning">Morning (9AM - 12PM)</SelectItem>
-              <SelectItem value="afternoon">Afternoon (12PM - 3PM)</SelectItem>
-              <SelectItem value="evening">Evening (3PM - 6PM)</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.timeSlot && (
-            <p className="text-red-500 text-sm">{errors.timeSlot.message}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Terms */}
-      <div className="mt-6">
-        <div className="flex items-start space-x-2">
-          <Checkbox
-            id="terms"
-            {...register("termsAccepted", {
-              required: "You must accept the terms and conditions",
-            })}
-          />
-          <label
-            htmlFor="terms"
-            className="text-sm font-medium leading-none cursor-pointer"
-          >
-            I agree to the <span className="underline">terms of service</span>{" "}
-            and
-            <span className="underline"> privacy policy</span>.
-          </label>
-        </div>
-        {errors.termsAccepted && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.termsAccepted.message}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-/* ===========================================
-   STEP 5: PERSONAL INFO Review
-   =========================================== */
-function Step5Review({ formData }: { formData: FormData }) {
-  return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Review Your Information</h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="font-bold mb-2">Personal Information</h3>
-          <p>Name: {formData.fullName}</p>
-          <p>Email: {formData.email}</p>
-          <p>Phone: {formData.phone}</p>
-        </div>
-
-        <div>
-          <h3 className="font-bold mb-2">Address</h3>
-          <p>{formData.street}</p>
-          <p>
-            {formData.city}, {formData.state} {formData.zipCode}
-          </p>
-        </div>
-
-        <div>
-          <h3 className="font-bold mb-2">Item Details</h3>
-          <p>Item Size: {formData.itemSize}</p>
-          <p>Additional Notes: {formData.additionalNotes || "None"}</p>
-          <p>QR Code: {formData.qrCode?.[0]?.name || "Not uploaded"}</p>
-        </div>
-
-        <div>
-          <h3 className="font-bold mb-2">Pickup Info</h3>
-          <p>
-            Date:{" "}
-            {formData.pickupDate
-              ? formData.pickupDate.toLocaleDateString()
-              : "Not selected"}
-          </p>
-          <p>Time Slot: {formData.timeSlot}</p>
-          <p>Terms Accepted: {formData.termsAccepted ? "Yes" : "No"}</p>
-        </div>
-      </div>
     </div>
   );
 }

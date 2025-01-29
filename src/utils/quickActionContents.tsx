@@ -1,6 +1,6 @@
 // utils/quickActionContents.ts
 import { QuickActionItem } from "@/types/dashboard";
-import { Calendar, MapPin, PlusCircle } from "lucide-react";
+import { Clock, Package, PlusCircle } from "lucide-react";
 
 export const actions: QuickActionItem[] = [
   {
@@ -9,13 +9,13 @@ export const actions: QuickActionItem[] = [
     path: "/schedule-return",
   },
   {
-    icon: MapPin,
-    label: "Find Drop-off",
-    path: "/locations",
+    icon: Package,
+    label: "Track Returns",
+    path: "/track-returns",
   },
   {
-    icon: Calendar,
-    label: "Schedule Pickup",
-    path: "/schedule-pickup",
+    icon: Clock,
+    label: "Return History",
+    path: "/return-history",
   },
 ];
