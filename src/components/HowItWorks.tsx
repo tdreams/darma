@@ -66,14 +66,14 @@ export default function HowItWorks() {
           </p>
         </motion.div>
 
-        {/* Circular Layout */}
+        {/* Dharma-Inspired Circular Layout */}
         <motion.div
           variants={circleVariants}
           initial="hidden"
           animate="visible"
           className="relative mx-auto w-full max-w-[600px] aspect-square"
         >
-          {/* Rotating Border */}
+          {/* Rotating Dharma Rings */}
           <motion.div
             animate={{ rotate: 360 }}
             transition={{
@@ -82,6 +82,15 @@ export default function HowItWorks() {
               ease: "linear",
             }}
             className="absolute inset-0 border-2 border-blue-200/50 rounded-full"
+          />
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            className="absolute inset-8 border-2 border-blue-200/30 rounded-full"
           />
 
           {/* Central Hub */}
@@ -119,7 +128,7 @@ export default function HowItWorks() {
                       transform: `translate(-50%, -50%)`,
                     }}
                     className={`flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-white 
-                    rounded-full shadow-lg cursor-pointer ${
+                    rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform ${
                       activeStep === index ? "ring-4 ring-blue-300" : ""
                     }`}
                     onClick={() => setActiveStep(index)}
