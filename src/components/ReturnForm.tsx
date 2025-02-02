@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
+import { step3Schema } from "@/utils/validation";
 
 // Your existing UI components (adjust imports as needed):
 import { Button } from "./ui/button";
@@ -12,6 +13,7 @@ import { Step4PickupInfo } from "./returnForm/steps/Step4PickupInfo";
 import { Step5Review } from "./returnForm/steps/Step5Review";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { step4Schema } from "@/utils/validation";
+import { getSchemaForStep } from "@/utils/getShemaForStep";
 
 export default function MultiStepReturnForm() {
   /**
@@ -32,7 +34,7 @@ export default function MultiStepReturnForm() {
     formState: { errors },
   } = useForm<FormData>({
     mode: "onBlur", // Validate on blur (or change as you prefer)
-    resolver: zodResolver(step4Schema),
+    resolver: zodResolver(getSchemaForStep(currentStep)),
     defaultValues: {
       itemSize: undefined,
       timeSlot: undefined,

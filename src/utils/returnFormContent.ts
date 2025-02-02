@@ -1,4 +1,11 @@
-import { UseFormRegister, FieldErrors, UseFormSetValue } from "react-hook-form";
+import {
+  UseFormRegister,
+  FieldErrors,
+  UseFormSetValue,
+  SubmitHandler,
+} from "react-hook-form";
+import { step3Schema } from "./validation";
+import { z } from "zod";
 
 // types/form.ts
 export interface FormData {
@@ -72,5 +79,10 @@ export interface FileUploadFieldProps {
   setFilePreview: (url: string | null) => void;
   register: UseFormRegister<FormData>;
   errors: FieldErrors<FormData>;
-  setValue: (field: "qrCode" | "itemImage", value: FileList) => void; // Restrict type for correct fields
+  setValue: UseFormSetValue<FormData>;
 }
+
+export interface step3SubProp {
+  onSubmit: SubmitHandler<Step3FormData>;
+}
+export type Step3FormData = z.infer<typeof step3Schema>;
