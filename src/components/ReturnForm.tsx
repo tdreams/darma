@@ -42,6 +42,7 @@ export default function MultiStepReturnForm() {
 
   // For file upload preview
   const watchQRCode = watch("qrCode");
+  const watchItemImage = watch("itemImage");
 
   // For date selection
   const [calendarDate, setCalendarDate] = useState<Date | undefined>();
@@ -133,6 +134,7 @@ export default function MultiStepReturnForm() {
             errors={errors}
             watchQRCode={watchQRCode}
             setValue={setValue}
+            watchItemImage={watchItemImage}
           />
         )}
 

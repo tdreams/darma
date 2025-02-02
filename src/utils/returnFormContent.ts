@@ -15,8 +15,9 @@ export interface FormData {
 
   // 3. Item Details
   itemSize: ItemSize;
-  additionalNotes?: string; // Optional
+  additionalNotes?: string;
   qrCode: FileList;
+  itemImage: FileList;
 
   // 4. Pickup Info & Terms
   pickupDate: Date;
@@ -34,7 +35,7 @@ export type TimeSlot = (typeof TIME_SLOTS)[number];
 export const STEP_VALIDATION_FIELDS = {
   1: ["fullName", "email", "phone"] as const,
   2: ["street", "city", "state", "zipCode"] as const,
-  3: ["itemSize", "qrCode"] as const,
+  3: ["itemSize", "qrCode", "itemImage"] as const,
   4: ["pickupDate", "timeSlot", "termsAccepted"] as const,
   5: [] as const,
 } as const;
@@ -52,12 +53,24 @@ interface BaseStepProps {
   setValue: UseFormSetValue<FormData>;
 }
 
+// Step 3 Props
 export interface Step3Props extends BaseStepProps {
-  watchQRCode: FileList | undefined;
+  watchQRCode?: FileList;
+  watchItemImage?: FileList;
 }
 
 // Step 4 Props
 export interface Step4Props extends BaseStepProps {
   calendarDate?: Date;
   setCalendarDate: (date: Date | undefined) => void;
+}
+
+export interface FileUploadFieldProps {
+  label: string;
+  fieldName: "qrCode" | "itemImage"; // Limit field names to just file uploads
+  filePreview: string | null;
+  setFilePreview: (url: string | null) => void;
+  register: UseFormRegister<FormData>;
+  errors: FieldErrors<FormData>;
+  setValue: (field: "qrCode" | "itemImage", value: FileList) => void; // Restrict type for correct fields
 }
