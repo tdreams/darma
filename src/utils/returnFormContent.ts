@@ -30,6 +30,9 @@ export interface FormData {
   pickupDate: Date;
   timeSlot: TimeSlot;
   termsAccepted: boolean;
+
+  //ExpressPickup
+  expressPickup: boolean;
 }
 
 export const ITEM_SIZES = ["small", "medium", "large"] as const;

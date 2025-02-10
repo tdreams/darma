@@ -1,27 +1,39 @@
-import { useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
-// Your existing UI components (adjust imports as needed):
+import { useState, useEffect } from "react";
+import { useForm, SubmitHandler, FormProvider } from "react-hook-form";
 import { Button } from "./ui/button";
-
 import { FormData, STEP_VALIDATION_FIELDS } from "@/utils/returnFormContent";
 import { Step1PersonalInfo } from "./returnForm/steps/Step1PersonalInfo";
-import { Step2Address } from "./returnForm/steps/Step2Address ";
+
 import { Step3ItemDetails } from "./returnForm/steps/Step3ItemDetails";
 import { Step4PickupInfo } from "./returnForm/steps/Step4PickupInfo";
 import { Step5Review } from "./returnForm/steps/Step5Review";
 import { zodResolver } from "@hookform/resolvers/zod";
-
 import { getSchemaForStep } from "@/utils/getShemaForStep";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { Step2Address } from "./returnForm/steps/Step2Address ";
+
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export default function MultiStepReturnForm() {
-  /**
-   * currentStep -> which step the user is on (1 to 4).
-   * formSubmitted -> if true, show success message (rather than steps).
-   */
   const [currentStep, setCurrentStep] = useState(1);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string>();
 
-  // React Hook Form setup
+  // Initialize React Hook Form methods
+  const methods = useForm<FormData>({
+    mode: "onBlur",
+    resolver: zodResolver(getSchemaForStep(currentStep)),
+    defaultValues: {
+      itemSize: undefined,
+      timeSlot: undefined,
+      termsAccepted: false,
+      expressPickup: false,
+    },
+  });
+
+  // Destructure the methods for convenience
   const {
     register,
     handleSubmit,
@@ -30,39 +42,48 @@ export default function MultiStepReturnForm() {
     setValue,
     getValues,
     formState: { errors },
-  } = useForm<FormData>({
-    mode: "onBlur", // Validate on blur (or change as you prefer)
-    resolver: zodResolver(getSchemaForStep(currentStep)),
-    defaultValues: {
-      itemSize: undefined,
-      timeSlot: undefined,
-      termsAccepted: false,
-    },
-  });
+  } = methods;
 
-  // For file upload preview
+  // Watch values for calculations and previews
   const watchQRCode = watch("qrCode");
   const watchItemImage = watch("itemImage");
 
   // For date selection
   const [calendarDate, setCalendarDate] = useState<Date | undefined>();
 
-  /**
-   * onSubmit is called ONLY when the user clicks "Submit" on the final step
-   * and all validations pass.
-   */
+  // Create PaymentIntent when reaching step 5
+  useEffect(() => {
+    if (currentStep === 5) {
+      const createPaymentIntent = async () => {
+        try {
+          const response = await fetch(
+            import.meta.env.VITE_API_URL + "/api/create-payment-intent",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                itemSize: getValues("itemSize"),
+                expressPickup: getValues("expressPickup"),
+              }),
+            }
+          );
+
+          const data = await response.json();
+          setClientSecret(data.clientSecret);
+        } catch (err) {
+          console.error("Error creating payment intent:", err);
+        }
+      };
+
+      createPaymentIntent();
+    }
+  }, [currentStep, getValues]);
+
   const onSubmit: SubmitHandler<FormData> = (data) => {
-    // Simulate API call
     console.log("Final form data:", data);
     setFormSubmitted(true);
   };
 
-  /**
-   * goNextStep is triggered on "Next" button click. We only validate
-   * fields relevant to the current step.
-   */
-
-  // Decide which fields to validate for the current step:
   const goNextStep = async () => {
     const fieldsToValidate =
       STEP_VALIDATION_FIELDS[
@@ -70,7 +91,6 @@ export default function MultiStepReturnForm() {
       ];
 
     const valid = await trigger(fieldsToValidate);
-
     if (!valid) return;
 
     if (currentStep < 5) {
@@ -84,13 +104,13 @@ export default function MultiStepReturnForm() {
     setCurrentStep(currentStep - 1);
   };
 
-  // If the user has submitted the form, show a success screen
+  // Success screen
   if (formSubmitted) {
     return (
       <div className="max-w-xl mx-auto mt-10 bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold mb-4">Thank You!</h2>
         <p className="text-gray-700 mb-4">
-          Your return request has been submitted. We’ll send a confirmation
+          Your return request has been submitted. We'll send a confirmation
           email shortly.
         </p>
         <Button onClick={() => setFormSubmitted(false)}>Fill Again</Button>
@@ -118,50 +138,64 @@ export default function MultiStepReturnForm() {
         ))}
       </div>
 
-      {/* Render different "pages" based on currentStep */}
-      <form onSubmit={(e) => e.preventDefault()} /* prevent default submit */>
-        {currentStep === 1 && (
-          <Step1PersonalInfo register={register} errors={errors} />
-        )}
-
-        {currentStep === 2 && (
-          <Step2Address register={register} errors={errors} />
-        )}
-
-        {currentStep === 3 && (
-          <Step3ItemDetails
-            register={register}
-            errors={errors}
-            watchQRCode={watchQRCode}
-            setValue={setValue}
-            watchItemImage={watchItemImage}
-          />
-        )}
-
-        {currentStep === 4 && (
-          <Step4PickupInfo
-            register={register}
-            errors={errors}
-            setValue={setValue}
-            calendarDate={calendarDate}
-            setCalendarDate={setCalendarDate}
-          />
-        )}
-
-        {currentStep === 5 && <Step5Review formData={getValues()} />}
-
-        {/* Navigation Buttons */}
-        <div className="mt-8 flex justify-between">
-          {currentStep > 1 && (
-            <Button variant="outline" onClick={goPrevStep}>
-              Back
-            </Button>
+      {/* Wrap the form in FormProvider so that useFormContext() works in nested components */}
+      <FormProvider {...methods}>
+        <form onSubmit={(e) => e.preventDefault()}>
+          {currentStep === 1 && (
+            <Step1PersonalInfo register={register} errors={errors} />
           )}
-          <Button type="button" onClick={goNextStep}>
-            {currentStep < 4 ? "Next" : "Submit"}
-          </Button>
-        </div>
-      </form>
+
+          {currentStep === 2 && (
+            <Step2Address register={register} errors={errors} />
+          )}
+
+          {currentStep === 3 && (
+            <Step3ItemDetails
+              register={register}
+              errors={errors}
+              watchQRCode={watchQRCode}
+              setValue={setValue}
+              watchItemImage={watchItemImage}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <Step4PickupInfo
+              register={register}
+              errors={errors}
+              setValue={setValue}
+              calendarDate={calendarDate}
+              setCalendarDate={setCalendarDate}
+            />
+          )}
+
+          {currentStep === 5 && clientSecret && (
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret,
+                appearance: { theme: "stripe" },
+              }}
+            >
+              <Step5Review formData={getValues()} />
+            </Elements>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="mt-8 flex justify-between">
+            {currentStep > 1 && (
+              <Button variant="outline" onClick={goPrevStep}>
+                Back
+              </Button>
+            )}
+            {currentStep < 5 && (
+              <Button type="button" onClick={goNextStep}>
+                Next
+              </Button>
+            )}
+          </div>
+        </form>
+      </FormProvider>
     </div>
   );
 }

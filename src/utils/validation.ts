@@ -72,6 +72,8 @@ export const step4Schema = z.object({
   termsAccepted: z
     .boolean()
     .refine((val) => val === true, "You must accept the terms and conditions"),
+
+  expressPickup: z.boolean().default(false),
 });
 
 export const fullFormSchema = z.object({
