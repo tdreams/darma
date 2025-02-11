@@ -12,7 +12,8 @@ export interface FormData {
   // 1. Personal Info
   fullName: string;
   email: string;
-  phone: string;
+  phone?: string;
+  savePhone?: boolean;
 
   // 2. Address
   street: string;

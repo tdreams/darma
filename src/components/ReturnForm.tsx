@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useForm, SubmitHandler, FormProvider } from "react-hook-form";
 import { Button } from "./ui/button";
 import { FormData, STEP_VALIDATION_FIELDS } from "@/utils/returnFormContent";
@@ -13,6 +13,9 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Step2Address } from "./returnForm/steps/Step2Address ";
 
+import { useUser } from "@clerk/clerk-react";
+import { trpc } from "@/lib/trpc";
+
 // Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -20,6 +23,9 @@ export default function MultiStepReturnForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>();
+
+  const { user } = useUser();
+  const updateUser = trpc.updateUser.useMutation();
 
   // Initialize React Hook Form methods
   const methods = useForm<FormData>({
@@ -30,6 +36,7 @@ export default function MultiStepReturnForm() {
       timeSlot: undefined,
       termsAccepted: false,
       expressPickup: false,
+      savePhone: false, // Default to not saving phone
     },
   });
 
@@ -79,16 +86,35 @@ export default function MultiStepReturnForm() {
     }
   }, [currentStep, getValues]);
 
-  const onSubmit: SubmitHandler<FormData> = (data) => {
-    console.log("Final form data:", data);
-    setFormSubmitted(true);
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
+    try {
+      // Update user data if phone saving is enabled
+      if (data.savePhone && user?.id) {
+        console.log("Updating user with phone:", data.phone); // Debug log
+        await updateUser.mutateAsync({
+          clerkId: user.id,
+          phone: data.phone,
+          shouldSavePhone: true, // Explicitly set to true
+        });
+      }
+
+      // Handle the rest of the form submission
+      console.log("Final form data:", data);
+      setFormSubmitted(true);
+    } catch (error) {
+      console.error("Form submission error:", error);
+      // Show error to user
+      alert("Failed to save your information. Please try again.");
+    }
   };
 
   const goNextStep = async () => {
-    const fieldsToValidate =
-      STEP_VALIDATION_FIELDS[
+    const fieldsToValidate = [
+      ...STEP_VALIDATION_FIELDS[
         currentStep as keyof typeof STEP_VALIDATION_FIELDS
-      ];
+      ],
+      ...(currentStep === 1 && getValues("savePhone") ? ["phone"] : []),
+    ] as (keyof FormData)[];
 
     const valid = await trigger(fieldsToValidate);
     if (!valid) return;
@@ -138,63 +164,65 @@ export default function MultiStepReturnForm() {
         ))}
       </div>
 
-      {/* Wrap the form in FormProvider so that useFormContext() works in nested components */}
+      {/* Wrap the form with FormProvider and Suspense */}
       <FormProvider {...methods}>
-        <form onSubmit={(e) => e.preventDefault()}>
-          {currentStep === 1 && (
-            <Step1PersonalInfo register={register} errors={errors} />
-          )}
-
-          {currentStep === 2 && (
-            <Step2Address register={register} errors={errors} />
-          )}
-
-          {currentStep === 3 && (
-            <Step3ItemDetails
-              register={register}
-              errors={errors}
-              watchQRCode={watchQRCode}
-              setValue={setValue}
-              watchItemImage={watchItemImage}
-            />
-          )}
-
-          {currentStep === 4 && (
-            <Step4PickupInfo
-              register={register}
-              errors={errors}
-              setValue={setValue}
-              calendarDate={calendarDate}
-              setCalendarDate={setCalendarDate}
-            />
-          )}
-
-          {currentStep === 5 && clientSecret && (
-            <Elements
-              stripe={stripePromise}
-              options={{
-                clientSecret,
-                appearance: { theme: "stripe" },
-              }}
-            >
-              <Step5Review formData={getValues()} />
-            </Elements>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="mt-8 flex justify-between">
-            {currentStep > 1 && (
-              <Button variant="outline" onClick={goPrevStep}>
-                Back
-              </Button>
+        <Suspense fallback={<div>Loading form step...</div>}>
+          <form onSubmit={(e) => e.preventDefault()}>
+            {currentStep === 1 && (
+              <Step1PersonalInfo register={register} errors={errors} />
             )}
-            {currentStep < 5 && (
-              <Button type="button" onClick={goNextStep}>
-                Next
-              </Button>
+
+            {currentStep === 2 && (
+              <Step2Address register={register} errors={errors} />
             )}
-          </div>
-        </form>
+
+            {currentStep === 3 && (
+              <Step3ItemDetails
+                register={register}
+                errors={errors}
+                watchQRCode={watchQRCode}
+                setValue={setValue}
+                watchItemImage={watchItemImage}
+              />
+            )}
+
+            {currentStep === 4 && (
+              <Step4PickupInfo
+                register={register}
+                errors={errors}
+                setValue={setValue}
+                calendarDate={calendarDate}
+                setCalendarDate={setCalendarDate}
+              />
+            )}
+
+            {currentStep === 5 && clientSecret && (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: { theme: "stripe" },
+                }}
+              >
+                <Step5Review formData={getValues()} />
+              </Elements>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="mt-8 flex justify-between">
+              {currentStep > 1 && (
+                <Button variant="outline" onClick={goPrevStep}>
+                  Back
+                </Button>
+              )}
+              {currentStep < 5 && (
+                <Button type="button" onClick={goNextStep}>
+                  Next
+                </Button>
+              )}
+            </div>
+          </form>
+        </Suspense>
       </FormProvider>
     </div>
   );
