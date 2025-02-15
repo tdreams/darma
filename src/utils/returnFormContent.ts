@@ -8,7 +8,7 @@ import { step3Schema } from "./validation";
 import { z } from "zod";
 
 // types/form.ts
-export interface FormData {
+export interface ReturnFormData {
   // 1. Personal Info
   fullName: string;
   email: string;
@@ -32,6 +32,13 @@ export interface FormData {
   timeSlot: TimeSlot;
   termsAccepted: boolean;
 
+  // Return station
+  returnStationStreet: string;
+  returnStationCity: string;
+  returnStationState: string;
+  returnStationZipCode: string;
+  saveReturnStation?: boolean;
+
   //ExpressPickup
   expressPickup: boolean;
 }
@@ -45,7 +52,16 @@ export type TimeSlot = (typeof TIME_SLOTS)[number];
 // Validation fields by step
 export const STEP_VALIDATION_FIELDS = {
   1: ["fullName", "email", "phone"] as const,
-  2: ["street", "city", "state", "zipCode"] as const,
+  2: [
+    "street",
+    "city",
+    "state",
+    "zipCode",
+    "returnStationStreet",
+    "returnStationCity",
+    "returnStationState",
+    "returnStationZipCode",
+  ] as const,
   3: ["itemSize", "qrCode", "itemImage"] as const,
   4: ["pickupDate", "timeSlot", "termsAccepted"] as const,
   5: [] as const,
@@ -59,9 +75,9 @@ export type ValidationFields = (typeof STEP_VALIDATION_FIELDS)[StepNumber];
 
 // Base props that all steps share
 interface BaseStepProps {
-  register: UseFormRegister<FormData>;
-  errors: FieldErrors<FormData>;
-  setValue: UseFormSetValue<FormData>;
+  register: UseFormRegister<ReturnFormData>;
+  errors: FieldErrors<ReturnFormData>;
+  setValue: UseFormSetValue<ReturnFormData>;
 }
 
 // Step 3 Props
@@ -76,14 +92,18 @@ export interface Step4Props extends BaseStepProps {
   setCalendarDate: (date: Date | undefined) => void;
 }
 
+export interface Step5props {
+  formData: ReturnFormData;
+}
+
 export interface FileUploadFieldProps {
   label: string;
   fieldName: "qrCode" | "itemImage"; // Limit field names to just file uploads
   filePreview: string | null;
   setFilePreview: (url: string | null) => void;
-  register: UseFormRegister<FormData>;
-  errors: FieldErrors<FormData>;
-  setValue: UseFormSetValue<FormData>;
+  register: UseFormRegister<ReturnFormData>;
+  errors: FieldErrors<ReturnFormData>;
+  setValue: UseFormSetValue<ReturnFormData>;
 }
 
 export interface step3SubProp {

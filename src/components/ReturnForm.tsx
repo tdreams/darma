@@ -1,7 +1,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useForm, SubmitHandler, FormProvider } from "react-hook-form";
 import { Button } from "./ui/button";
-import { FormData, STEP_VALIDATION_FIELDS } from "@/utils/returnFormContent";
+import {
+  ReturnFormData,
+  STEP_VALIDATION_FIELDS,
+} from "@/utils/returnFormContent";
 import { Step1PersonalInfo } from "./returnForm/steps/Step1PersonalInfo";
 
 import { Step3ItemDetails } from "./returnForm/steps/Step3ItemDetails";
@@ -28,7 +31,7 @@ export default function MultiStepReturnForm() {
   const updateUser = trpc.updateUser.useMutation();
 
   // Initialize React Hook Form methods
-  const methods = useForm<FormData>({
+  const methods = useForm<ReturnFormData>({
     mode: "onBlur",
     resolver: zodResolver(getSchemaForStep(currentStep)),
     defaultValues: {
@@ -86,7 +89,7 @@ export default function MultiStepReturnForm() {
     }
   }, [currentStep, getValues]);
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const onSubmit: SubmitHandler<ReturnFormData> = async (data) => {
     try {
       // Update user data if phone saving is enabled
       if (data.savePhone && user?.id) {
@@ -114,7 +117,7 @@ export default function MultiStepReturnForm() {
         currentStep as keyof typeof STEP_VALIDATION_FIELDS
       ],
       ...(currentStep === 1 && getValues("savePhone") ? ["phone"] : []),
-    ] as (keyof FormData)[];
+    ] as (keyof ReturnFormData)[];
 
     const valid = await trigger(fieldsToValidate);
     if (!valid) return;

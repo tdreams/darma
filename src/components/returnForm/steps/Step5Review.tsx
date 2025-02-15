@@ -1,4 +1,4 @@
-import { FormData } from "@/utils/returnFormContent";
+import { Step5props } from "@/utils/returnFormContent";
 import { CheckCircle, CreditCard, Package, Rocket, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,17 +8,39 @@ import {
 } from "@stripe/react-stripe-js";
 import { useState } from "react";
 import { calculateTotal } from "@/utils/pricing";
+import { trpc } from "@/lib/trpc";
+import { useUser } from "@clerk/clerk-react";
 
-export function Step5Review({ formData }: { formData: FormData }) {
+export function Step5Review({ formData }: Step5props) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
 
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  const createReturn = trpc.createReturn.useMutation();
+  const { user } = useUser();
+
   const totalAmount = calculateTotal(formData.itemSize, formData.expressPickup);
   const basePrice = calculateTotal(formData.itemSize, false);
 
+  //Function to upload files to storage
+  const uploadFile = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to upload file");
+    }
+
+    const { url } = await response.json();
+    return url;
+  };
   // Generate preview URLs
   const getPreviewUrl = (file: File | undefined) =>
     file ? URL.createObjectURL(file) : null;
@@ -31,8 +53,8 @@ export function Step5Review({ formData }: { formData: FormData }) {
     setPaymentError(null);
 
     try {
-      if (!stripe || !elements) {
-        throw new Error("Stripe.js has not loaded properly.");
+      if (!stripe || !elements || !user) {
+        throw new Error("Required dependencies not loaded.");
       }
 
       // Submit the Payment Element form
@@ -41,25 +63,67 @@ export function Step5Review({ formData }: { formData: FormData }) {
         throw submitError;
       }
 
+      // Upload files first
+      const [qrCodeUrl, imageUrl] = await Promise.all([
+        formData.qrCode?.[0]
+          ? uploadFile(formData.qrCode[0])
+          : Promise.reject("QR Code required"),
+        formData.itemImage?.[0]
+          ? uploadFile(formData.itemImage[0])
+          : Promise.resolve(null),
+      ]);
+
       // Confirm the payment
-      const { error: confirmError } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/success`,
-        },
-      });
+      const { error: confirmError, paymentIntent } =
+        await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: `${window.location.origin}/success`,
+          },
+          redirect: "if_required",
+        });
 
       if (confirmError) {
         throw confirmError;
       }
+
+      if (paymentIntent?.status === "succeeded") {
+        // Create return record using clerkId
+        // Create return record using clerkId
+        await createReturn.mutateAsync({
+          clerkId: user.id,
+          // Item details
+          itemSize: formData.itemSize,
+          expressPickup: formData.expressPickup,
+          qrCodeUrl,
+          imageUrl: imageUrl || undefined,
+          // Pickup address
+          street: formData.street,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+          // Return station address
+          returnStationStreet: formData.returnStationStreet,
+          returnStationCity: formData.returnStationCity,
+          returnStationState: formData.returnStationState,
+          returnStationZipCode: formData.returnStationZipCode,
+          // Schedule and payment
+          pickupDate: formData.pickupDate.toISOString(),
+          timeSlot: formData.timeSlot,
+          paymentIntentId: paymentIntent.id,
+          amount: totalAmount,
+        });
+
+        // Redirect to success page
+        window.location.href = `${window.location.origin}/success?return_id=${paymentIntent.id}`;
+      }
     } catch (err: any) {
-      console.error(err);
+      console.error("Payment/upload error:", err);
       setPaymentError(err.message || "Payment failed - please try again");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div className="text-center mb-8">

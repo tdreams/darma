@@ -12,11 +12,32 @@ import {
 import { Package, ArrowRight, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import StatGrid from "./StatGrid";
+import { trpc } from "@/lib/trpc";
+import Loading from "./Loading";
+
+interface ReturnItem {
+  id: number;
+  status: string;
+  itemSize: string;
+  createdAt: string | null;
+  returnStationStreet: string;
+  returnStationCity: string;
+}
 
 export default function WelcomeCard() {
   const { user, isLoaded } = useUser();
   const navigate = useNavigate();
   const currentTime = new Date().getHours();
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const { data: recentReturns, isLoading: isLoadingReturns } =
+    trpc.getRecentReturns.useQuery(user?.id || "", {
+      enabled: !!user?.id,
+    });
 
   if (!isLoaded) {
     return (
@@ -26,6 +47,10 @@ export default function WelcomeCard() {
         <div className="h-4 bg-blue-500 rounded w-1/2" />
       </Card>
     );
+  }
+
+  if (isLoadingReturns) {
+    return <Loading />;
   }
 
   const getGreeting = () => {
@@ -83,9 +108,31 @@ export default function WelcomeCard() {
           {/* Recent Activity */}
           <div className="bg-blue-500 bg-opacity-25 rounded-lg p-4">
             <h3 className="text-sm font-medium mb-2">Recent Activity</h3>
-            <p className="text-sm text-blue-100">
-              No recent activity. Start by creating a new return.
-            </p>
+            {recentReturns?.length ? (
+              <div className="space-y-2">
+                {recentReturns.map((return_: ReturnItem) => (
+                  <div
+                    key={return_.id}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Package className="w-4 h-4" />
+                      <span>
+                        {return_.itemSize} package to{" "}
+                        {return_.returnStationCity}
+                      </span>
+                    </div>
+                    <span className="text-blue-100">
+                      {formatDate(return_.createdAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-blue-100">
+                No recent activity. Start by creating a new return.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
