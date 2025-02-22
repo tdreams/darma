@@ -14,6 +14,9 @@ import SignUpPage from "./components/SignUpPage";
 import SignInPage from "./components/SignInPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./components/pages/Dashboard";
+import ReturnDetails from "./components/pages/admin/returns/ReturnDetails";
+import AdminLayout from "./components/AdminLayout";
+import AdminReturnsPage from "./components/pages/admin/AdminReturnsPage";
 
 function App() {
   const { isLoaded } = useAuth();
@@ -79,6 +82,13 @@ function App() {
               </div>
             }
           />
+          {/* Admin Routes */}
+
+          <Route path="/admin" element={<AdminLayout />}>
+            {/* Route for listing all returns */}
+            <Route path="returns" element={<AdminReturnsPage />} />
+            <Route path="returns/:id" element={<ReturnDetails />} />
+          </Route>
         </Routes>
       </main>
 

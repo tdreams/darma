@@ -59,7 +59,14 @@ export function Step3ItemDetails({ register, errors, setValue }: Step3Props) {
               id="additionalNotes"
               placeholder="e.g., Fragile item, special packaging instructions"
               className="mt-2"
-              {...register("additionalNotes")}
+              {...register("additionalNotes", {
+                required: false,
+                // Add validation if needed
+                maxLength: {
+                  value: 500,
+                  message: "Notes cannot exceed 500 characters",
+                },
+              })}
             />
           </div>
         </div>

@@ -93,8 +93,10 @@ export function Step5Review({ formData }: Step5props) {
         await createReturn.mutateAsync({
           clerkId: user.id,
           // Item details
+          fullName: formData.fullName,
           itemSize: formData.itemSize,
           expressPickup: formData.expressPickup,
+          additionalNotes: formData.additionalNotes,
           qrCodeUrl,
           imageUrl: imageUrl || undefined,
           // Pickup address
