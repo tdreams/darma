@@ -1,32 +1,25 @@
-// src/components/admin/ReturnStatusHistory.tsx
 import { trpc } from "@/lib/trpc";
 
+// components/admin/ReturnStatusHistory.tsx
 export function ReturnStatusHistory({ returnId }: { returnId: number }) {
-  const { data: history, isLoading } = trpc.getReturnStatusHistory.useQuery(
-    { returnId },
-    { enabled: !!returnId }
-  );
-
-  if (isLoading) {
-    return <div>Loading history...</div>;
-  }
+  const { data: history } = trpc.getReturnStatusHistory.useQuery({ returnId });
 
   if (!history?.length) {
-    return <div>No status history found.</div>;
+    return <div className="p-4 text-gray-500">No status history available</div>;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y">
       {history.map((entry) => (
-        <div key={entry.id} className="p-4 border rounded-lg">
-          <div className="font-medium">{entry.status}</div>
-          <div className="text-sm text-gray-500">
-            {new Date(entry.createdAt).toLocaleString()}
+        <div key={entry.id} className="p-4">
+          <div className="flex items-center justify-between">
+            <span className="font-medium">{entry.status}</span>
+            <span className="text-sm text-gray-500">
+              {new Date(entry.createdAt).toLocaleDateString()}
+            </span>
           </div>
           {entry.notes && (
-            <div className="mt-2 text-sm">
-              <strong>Notes:</strong> {entry.notes}
-            </div>
+            <p className="mt-1 text-sm text-gray-600">{entry.notes}</p>
           )}
         </div>
       ))}

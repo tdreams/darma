@@ -1,6 +1,7 @@
 // utils/validation.ts
 import { z } from "zod";
 import { TIME_SLOTS } from "@/utils/returnFormContent";
+import { isZipCodeSupported } from "@/utils/locationValidation";
 
 export const step1Schema = z.object({
   fullName: z
@@ -26,7 +27,11 @@ export const step2Schema = z.object({
   zipCode: z
     .string()
     .min(1, "Zip code is required")
-    .regex(/^\d{5}$/, "Zip code must be 5 digits"),
+    .regex(/^\d{5}$/, "Zip code must be 5 digits")
+    .refine(
+      (zip) => isZipCodeSupported(zip),
+      "This ZIP code is not in our service area"
+    ),
   saveAddress: z.boolean().optional(),
 
   // Return station
@@ -36,7 +41,11 @@ export const step2Schema = z.object({
   returnStationZipCode: z
     .string()
     .min(1, "Return station zip code is required")
-    .regex(/^\d{5}$/, "Return station zip code must be 5 digits"),
+    .regex(/^\d{5}$/, "Return station zip code must be 5 digits")
+    .refine(
+      (zip) => isZipCodeSupported(zip),
+      "This ZIP code is not in our service area"
+    ),
   saveReturnStation: z.boolean().optional(),
 });
 
@@ -104,7 +113,11 @@ export const fullFormSchema = z.object({
   zipCode: z
     .string()
     .min(1, "Zip code is required")
-    .regex(/^\d{5}$/, "Zip code must be 5 digits"),
+    .regex(/^\d{5}$/, "Zip code must be 5 digits")
+    .refine(
+      (zip) => isZipCodeSupported(zip),
+      "This ZIP code is not in our service area"
+    ),
   saveAddress: z.boolean().optional(),
 
   // Return station
@@ -114,7 +127,11 @@ export const fullFormSchema = z.object({
   returnStationZipCode: z
     .string()
     .min(1, "Return station zip code is required")
-    .regex(/^\d{5}$/, "Return station zip code must be 5 digits"),
+    .regex(/^\d{5}$/, "Return station zip code must be 5 digits")
+    .refine(
+      (zip) => isZipCodeSupported(zip),
+      "This ZIP code is not in our service area"
+    ),
   saveReturnStation: z.boolean().optional(),
 
   // Step 3: Item Details

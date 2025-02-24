@@ -5,17 +5,18 @@ import { MapPin } from "lucide-react";
 import { Button } from "../ui/button";
 import { useUser } from "@clerk/clerk-react";
 import { trpc } from "@/lib/trpc";
-import { useNavigate } from "react-router-dom";
 import Loading from "./Loading";
+import { useState } from "react";
+import PreferredLocationModal from "../PreferredLocationModal"; // Import the modal
 
 export default function ReturnStatistics() {
   const { user } = useUser();
-  const navigate = useNavigate();
   const { data: preferredLocation, isLoading } =
     trpc.getPreferredReturnStation.useQuery(user?.id || "", {
       enabled: !!user?.id,
     });
 
+  const [modalOpen, setModalOpen] = useState(false);
   const hasPreferredLocation = preferredLocation?.returnStationStreet;
 
   if (isLoading) {
@@ -44,7 +45,7 @@ export default function ReturnStatistics() {
             variant="ghost"
             size="sm"
             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            onClick={() => navigate("/schedule-return")}
+            onClick={() => setModalOpen(true)}
           >
             {hasPreferredLocation ? "Update Location" : "Set Location"}
           </Button>
@@ -55,6 +56,10 @@ export default function ReturnStatistics() {
             : "Set your preferred drop-off location for faster returns"}
         </p>
       </div>
+      <PreferredLocationModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+      />
     </motion.div>
   );
 }

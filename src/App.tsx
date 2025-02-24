@@ -18,6 +18,13 @@ import ReturnDetails from "./components/pages/admin/returns/ReturnDetails";
 import AdminLayout from "./components/AdminLayout";
 import AdminReturnsPage from "./components/pages/admin/AdminReturnsPage";
 
+import { Toaster } from "sonner";
+import ScrollToHash from "./utils/ScrollToHash";
+import MyReturns from "./components/pages/MyReturns";
+import UserReturnDetails from "./components/pages/userReturnDetails";
+import { NotificationProvider } from "./context/NotificationContext";
+import SuccessPage from "./components/pages/SuccesPage";
+
 function App() {
   const { isLoaded } = useAuth();
 
@@ -30,70 +37,100 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
+    <NotificationProvider>
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <Toaster position="bottom-right" />
+        <ScrollToHash />
+        <main className="flex-grow">
+          <Routes>
+            {/* Public Routes */}
+            <Route
+              path="/"
+              element={
+                <>
+                  <Hero />
+                  <Features />
+                  <HowItWorks />
+                  <NotifyMe />
+                </>
+              }
+            />
+            <Route path="/login" element={<SignInPage />} />
+            <Route path="/register/*" element={<SignUpPage />} />
 
-      <main className="flex-grow">
-        <Routes>
-          {/* Public Routes */}
-          <Route
-            path="/"
-            element={
-              <>
-                <Hero />
-                <Features />
-                <HowItWorks />
-                <NotifyMe />
-              </>
-            }
-          />
-          <Route path="/login" element={<SignInPage />} />
-          <Route path="/register/*" element={<SignUpPage />} />
+            {/* Protected Routes */}
 
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/schedule-return"
-            element={
-              <ProtectedRoute>
-                <ReturnForm />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/schedule-return"
+              element={
+                <ProtectedRoute>
+                  <ReturnForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/my-returns/:id"
+              element={
+                <ProtectedRoute>
+                  <UserReturnDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/my-returns"
+              element={
+                <ProtectedRoute>
+                  <MyReturns />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/success"
+              element={
+                <ProtectedRoute>
+                  <SuccessPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="/faq" element={<FAQ />} />
+            <Route path="/faq" element={<FAQ />} />
 
-          {/* Catch-all Route */}
-          <Route
-            path="*"
-            element={
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                  <h1 className="text-4xl font-bold text-gray-800 mb-4">404</h1>
-                  <p className="text-gray-600">Page not found</p>
+            {/* Catch-all Route */}
+            <Route
+              path="*"
+              element={
+                <div className="flex items-center justify-center min-h-screen">
+                  <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-800 mb-4">
+                      404
+                    </h1>
+                    <p className="text-gray-600">Page not found</p>
+                  </div>
                 </div>
-              </div>
-            }
-          />
-          {/* Admin Routes */}
+              }
+            />
+            {/* Admin Routes */}
 
-          <Route path="/admin" element={<AdminLayout />}>
-            {/* Route for listing all returns */}
-            <Route path="returns" element={<AdminReturnsPage />} />
-            <Route path="returns/:id" element={<ReturnDetails />} />
-          </Route>
-        </Routes>
-      </main>
+            <Route path="/admin" element={<AdminLayout />}>
+              {/* Route for listing all returns */}
+              <Route path="returns" element={<AdminReturnsPage />} />
+              <Route path="returns/:id" element={<ReturnDetails />} />
+            </Route>
+          </Routes>
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </NotificationProvider>
   );
 }
 

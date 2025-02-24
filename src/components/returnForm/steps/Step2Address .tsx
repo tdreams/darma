@@ -1,11 +1,25 @@
-// server/src/components/returnForm/steps/Step2Address.tsx
+// components/returnForm/steps/Step2Address.tsx
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUser } from "@clerk/clerk-react";
 import { trpc } from "@/lib/trpc";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { MapPin, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  isZipCodeSupported,
+  getCityFromZipCode,
+  getServiceAreaMessage,
+} from "@/utils/locationValidation";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
+
+interface LocationStatus {
+  isSupported: boolean;
+  message: string;
+  city?: string;
+}
 
 export function Step2Address({
   register,
@@ -17,16 +31,84 @@ export function Step2Address({
   const { user } = useUser();
   const { setValue, watch } = useFormContext();
   const updateUser = trpc.updateUser.useMutation();
+  const [_isValidatingZip, setIsValidatingZip] = useState(false);
+  const [pickupLocationStatus, setPickupLocationStatus] =
+    useState<LocationStatus | null>(null);
+  const [returnStationLocationStatus, setReturnStationLocationStatus] =
+    useState<LocationStatus | null>(null);
 
   // Watch save address checkbox
   const saveAddressValue = watch("saveAddress");
   const saveReturnStationValue = watch("saveReturnStation");
+  const zipCode = watch("zipCode");
+  const returnStationZipCode = watch("returnStationZipCode");
 
   // Fetch user data
   const { data: userData, isLoading } = trpc.getUser.useQuery(user?.id || "", {
     enabled: !!user?.id,
     staleTime: 60_000,
   });
+
+  // Validate ZIP code
+  const validateZipCode = async (
+    zipCode: string,
+    isReturnStation: boolean = false
+  ) => {
+    setIsValidatingZip(true);
+
+    if (/^\d{5}$/.test(zipCode)) {
+      const supported = isZipCodeSupported(zipCode);
+      const city = getCityFromZipCode(zipCode);
+
+      const status = {
+        isSupported: supported,
+        message: supported
+          ? `Great! We service ${city}.`
+          : getServiceAreaMessage(),
+        city: city,
+      };
+
+      if (isReturnStation) {
+        setReturnStationLocationStatus(status);
+        if (!supported) {
+          toast.error(
+            `Return station ZIP code ${zipCode} is not in our service area`
+          );
+        }
+      } else {
+        setPickupLocationStatus(status);
+        if (!supported) {
+          toast.error(`Pickup ZIP code ${zipCode} is not in our service area`);
+        }
+      }
+    } else {
+      if (isReturnStation) {
+        setReturnStationLocationStatus(null);
+      } else {
+        setPickupLocationStatus(null);
+      }
+    }
+
+    setIsValidatingZip(false);
+    return true;
+  };
+
+  // Watch ZIP code changes
+  useEffect(() => {
+    if (zipCode) {
+      validateZipCode(zipCode, false);
+    } else {
+      setPickupLocationStatus(null);
+    }
+  }, [zipCode]);
+
+  useEffect(() => {
+    if (returnStationZipCode) {
+      validateZipCode(returnStationZipCode, true);
+    } else {
+      setReturnStationLocationStatus(null);
+    }
+  }, [returnStationZipCode]);
 
   // Populate form fields when data loads
   useEffect(() => {
@@ -57,19 +139,26 @@ export function Step2Address({
 
     if (checked && user?.id) {
       try {
+        const currentZipCode = watch("zipCode");
+        if (!isZipCodeSupported(currentZipCode)) {
+          toast.error("Cannot save address with unsupported ZIP code");
+          setValue("saveAddress", false);
+          return;
+        }
+
         await updateUser.mutateAsync({
           clerkId: user.id,
           street: watch("street"),
           city: watch("city"),
           state: watch("state"),
-          zipCode: watch("zipCode"),
+          zipCode: currentZipCode,
           shouldSaveAddress: true,
         });
-        console.log("Address saved successfully");
+        toast.success("Address saved successfully");
       } catch (error) {
         console.error("Failed to save address:", error);
         setValue("saveAddress", false);
-        alert("Failed to save address. Please try again.");
+        toast.error("Failed to save address. Please try again.");
       }
     }
   };
@@ -80,22 +169,72 @@ export function Step2Address({
 
     if (checked && user?.id) {
       try {
+        const currentReturnZipCode = watch("returnStationZipCode");
+        if (!isZipCodeSupported(currentReturnZipCode)) {
+          toast.error("Cannot save return station with unsupported ZIP code");
+          setValue("saveReturnStation", false);
+          return;
+        }
+
         await updateUser.mutateAsync({
           clerkId: user.id,
           returnStationStreet: watch("returnStationStreet"),
           returnStationCity: watch("returnStationCity"),
           returnStationState: watch("returnStationState"),
-          returnStationZipCode: watch("returnStationZipCode"),
+          returnStationZipCode: currentReturnZipCode,
           shouldSaveReturnStation: true,
         });
-        console.log("Return station saved successfully");
+        toast.success("Return station saved successfully");
       } catch (error) {
         console.error("Failed to save return station:", error);
         setValue("saveReturnStation", false);
-        alert("Failed to save return station. Please try again.");
+        toast.error("Failed to save return station. Please try again.");
       }
     }
   };
+
+  const renderZipCodeInput = (
+    fieldName: string,
+    label: string,
+    status: LocationStatus | null,
+    _isReturnStation: boolean = false
+  ) => (
+    <div className="relative">
+      <Label htmlFor={fieldName}>{label}</Label>
+      <Input
+        id={fieldName}
+        placeholder="12345"
+        {...register(fieldName, {
+          required: `${label} is required`,
+          pattern: {
+            value: /^\d{5}$/,
+            message: "Please enter a valid 5-digit ZIP code",
+          },
+          validate: (value: string) =>
+            isZipCodeSupported(value) ||
+            "Sorry, this ZIP code is not in our service area",
+        })}
+        className={status?.isSupported ? "border-green-500" : ""}
+      />
+      {status && (
+        <div
+          className={`mt-2 text-sm flex items-center gap-2 ${
+            status.isSupported ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {status.isSupported ? (
+            <CheckCircle2 className="h-4 w-4" />
+          ) : (
+            <AlertTriangle className="h-4 w-4" />
+          )}
+          {status.message}
+        </div>
+      )}
+      {errors[fieldName] && (
+        <p className="text-red-500 text-sm mt-1">{errors[fieldName].message}</p>
+      )}
+    </div>
+  );
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -103,11 +242,16 @@ export function Step2Address({
 
   return (
     <div className="space-y-8">
+      <Alert>
+        <MapPin className="h-4 w-4" />
+        <AlertTitle>Service Area Information</AlertTitle>
+        <AlertDescription>{getServiceAreaMessage()}</AlertDescription>
+      </Alert>
+
       {/* Pickup Address Section */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Pickup Address</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Existing address fields */}
           {/* Street */}
           <div>
             <Label htmlFor="street">Street Address</Label>
@@ -149,24 +293,13 @@ export function Step2Address({
             )}
           </div>
 
-          {/* Zip Code */}
-          <div>
-            <Label htmlFor="zipCode">ZIP Code</Label>
-            <Input
-              id="zipCode"
-              placeholder="12345"
-              {...register("zipCode", {
-                required: "ZIP code is required",
-                pattern: {
-                  value: /^\d{5}(-\d{4})?$/,
-                  message: "Invalid ZIP code",
-                },
-              })}
-            />
-            {errors.zipCode && (
-              <p className="text-red-500 text-sm">{errors.zipCode.message}</p>
-            )}
-          </div>
+          {/* ZIP Code with validation */}
+          {renderZipCodeInput(
+            "zipCode",
+            "ZIP Code",
+            pickupLocationStatus,
+            false
+          )}
 
           {/* Save Address Checkbox */}
           <div className="col-span-full">
@@ -241,25 +374,15 @@ export function Step2Address({
             )}
           </div>
 
-          {/* Return Station ZIP */}
-          <div>
-            <Label htmlFor="returnStationZipCode">ZIP Code</Label>
-            <Input
-              id="returnStationZipCode"
-              {...register("returnStationZipCode", {
-                required: "Return station ZIP code is required",
-                pattern: {
-                  value: /^\d{5}(-\d{4})?$/,
-                  message: "Invalid ZIP code",
-                },
-              })}
-            />
-            {errors.returnStationZipCode && (
-              <p className="text-red-500 text-sm">
-                {errors.returnStationZipCode.message}
-              </p>
-            )}
-          </div>
+          {/* Return Station ZIP with validation */}
+          {renderZipCodeInput(
+            "returnStationZipCode",
+            "Return Station ZIP Code",
+            returnStationLocationStatus,
+            true
+          )}
+
+          {/* Save Return Station Checkbox */}
           <div className="col-span-full">
             <div className="flex items-center space-x-2">
               <Checkbox

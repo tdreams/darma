@@ -1,162 +1,235 @@
-import { Package, Bell } from "lucide-react";
-import { Link } from "react-router-dom";
+// components/Header.tsx
+import {
+  Package,
+  Menu,
+  Home,
+  LayoutDashboard,
+  Mail,
+  Settings,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import { HashLink } from "react-router-hash-link";
-import { useAuth, UserButton, SignedIn, SignedOut } from "@clerk/clerk-react";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  useAuth,
+  UserButton,
+  SignedIn,
+  SignedOut,
+  useUser,
+} from "@clerk/clerk-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { NotificationPanel } from "./NotificationPanel";
+import { useNotifications } from "@/context/NotificationContext";
 
 export default function Header() {
   const { isLoaded } = useAuth();
-  const [showNotifications, setShowNotifications] = useState(false);
+  const { user } = useUser();
+  const location = useLocation();
+  const { unreadCount } = useNotifications();
 
-  const notifications = [
-    // Add your notifications here
-    // Example:
-    { id: 1, message: "Your return has been processed", date: "2024-03-20" },
+  // Check if user is admin
+  const isAdmin = user?.publicMetadata.role === "admin";
+
+  const MobileUserActions = () => (
+    <div className="absolute bottom-0 left-0 right-0 border-t bg-gray-50 p-4">
+      <div className="flex items-center gap-4 mb-4">
+        <UserButton
+          afterSignOutUrl="/"
+          appearance={{
+            elements: { avatarBox: "w-10 h-10" },
+          }}
+        />
+        <div className="flex-1">
+          <p className="font-medium text-gray-900">{user?.fullName}</p>
+          <p className="text-sm text-gray-500">
+            {user?.primaryEmailAddress?.emailAddress}
+          </p>
+        </div>
+      </div>
+      {isAdmin && (
+        <div className="mb-2">
+          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+            Admin Access
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  // Base navigation items
+  const baseNavigationItems = [
+    { path: "/", label: "Home", icon: Home },
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/contact", label: "Contact", icon: Mail },
   ];
 
+  // Admin navigation item
+  const adminNavigationItem = {
+    path: "/admin/returns",
+    label: "Admin Panel",
+    icon: Settings,
+  };
+
+  // Combine navigation items based on admin status
+  const navigationItems = isAdmin
+    ? [...baseNavigationItems, adminNavigationItem]
+    : baseNavigationItems;
+
+  const isActive = (path: string) => location.pathname.startsWith(path);
+
   if (!isLoaded) {
-    return (
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <span>Loading...</span>
-        </div>
-      </header>
-    );
+    return <div className="h-16 bg-white shadow-sm animate-pulse" />;
   }
 
   return (
-    <header className="bg-white shadow-sm relative">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <HashLink to="/" className="flex items-center space-x-2">
+    <header className="bg-white border-b sticky top-0 z-50">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Logo */}
+        <Link
+          to="/"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+        >
           <Package className="h-8 w-8 text-blue-600" />
-          <span className="text-xl font-bold text-gray-800">Darma</span>
-        </HashLink>
+          <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            Darma
+          </span>
+        </Link>
 
-        <nav>
-          <ul className="flex space-x-4 items-center">
-            <li>
-              <HashLink
-                smooth
-                to="/#features"
-                className="text-gray-600 hover:text-blue-600"
-                aria-label="Navigate to Features section"
-              >
-                Features
-              </HashLink>
-            </li>
-            <li>
-              <HashLink
-                smooth
-                to="/#how-it-works"
-                className="text-gray-600 hover:text-blue-600"
-                aria-label="Navigate to How It Works section"
-              >
-                How-it-works
-              </HashLink>
-            </li>
-            <li>
-              <HashLink
-                smooth
-                to="/#notify-me"
-                className="text-gray-600 hover:text-blue-600"
-                aria-label="Navigate to Contact section"
-              >
-                Contact
-              </HashLink>
-            </li>
-
-            <SignedOut>
-              <li>
-                <Link to="/login">
-                  <Button variant="outline">Login</Button>
-                </Link>
-              </li>
-              <li>
-                <Link to="/register">
-                  <Button>Register</Button>
-                </Link>
-              </li>
-            </SignedOut>
-
-            <SignedIn>
-              <li>
-                <button
-                  className="relative p-2 text-gray-400 hover:text-gray-500"
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  aria-label="Notifications"
+        {/* Desktop Navigation */}
+        <nav className="hidden md:block">
+          <ul className="flex items-center space-x-6">
+            {navigationItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-md transition-colors ${
+                    isActive(item.path)
+                      ? "bg-blue-50 text-blue-600 font-medium"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
                 >
-                  <Bell className="w-6 h-6" />
-                  {notifications.length > 0 && (
-                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400" />
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                  {item.path === "/admin/returns" && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      Admin
+                    </span>
                   )}
-                </button>
+                </Link>
               </li>
-              <li>
-                <UserButton
-                  afterSignOutUrl="/"
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-8 h-8",
-                    },
-                  }}
-                />
-              </li>
-            </SignedIn>
+            ))}
           </ul>
         </nav>
 
-        {/* Notifications Panel */}
-        <AnimatePresence>
-          {showNotifications && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-50 z-40"
-                onClick={() => setShowNotifications(false)}
-              />
+        {/* Desktop User Actions */}
+        <div className="hidden md:flex items-center space-x-4">
+          <SignedOut>
+            <div className="flex items-center space-x-2">
+              <Link to="/login">
+                <Button variant="outline" size="sm">
+                  Login
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button size="sm">Register</Button>
+              </Link>
+            </div>
+          </SignedOut>
+          <SignedIn>
+            <NotificationPanel />
+            <UserButton
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  avatarBox: "w-8 h-8",
+                },
+              }}
+            />
+          </SignedIn>
+        </div>
 
-              {/* Notifications Panel */}
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="absolute right-4 top-16 w-80 bg-white rounded-lg shadow-lg z-50"
-              >
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Notifications
-                  </h3>
+        {/* Mobile Menu */}
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Menu className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-full sm:w-[300px] p-0">
+              <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="p-4 border-b">
+                  <div className="flex items-center space-x-2">
+                    <Package className="h-6 w-6 text-blue-600" />
+                    <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                      Darma
+                    </span>
+                  </div>
                 </div>
-                <div className="max-h-[400px] overflow-y-auto">
-                  {notifications.length > 0 ? (
-                    notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className="p-4 border-b border-gray-100 hover:bg-gray-50"
+
+                {/* Navigation */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  <nav className="space-y-2">
+                    {navigationItems.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center space-x-2 p-3 rounded-md transition-colors ${
+                          isActive(item.path)
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-gray-600 hover:bg-gray-50"
+                        }`}
                       >
-                        <p className="text-sm text-gray-600">
-                          {notification.message}
-                        </p>
-                        <span className="text-xs text-gray-400 mt-1">
-                          {notification.date}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-gray-500">
-                      No new notifications
-                    </div>
-                  )}
+                        <item.icon className="w-5 h-5" />
+                        <span className="font-medium">{item.label}</span>
+                        {item.path === "/admin/returns" && (
+                          <span className="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                            Admin
+                          </span>
+                        )}
+                      </Link>
+                    ))}
+                  </nav>
+
+                  {/* Notifications Section */}
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium text-gray-500 px-3 mb-2">
+                      Notifications
+                    </h3>
+                    <NotificationPanel isMobile />
+                  </div>
                 </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+
+                {/* Sign In/Out Section */}
+                <div className="mt-auto">
+                  <SignedIn>
+                    <MobileUserActions />
+                  </SignedIn>
+                  <SignedOut>
+                    <div className="p-4 border-t bg-gray-50">
+                      <div className="grid gap-2">
+                        <Link to="/login">
+                          <Button variant="outline" className="w-full">
+                            Login
+                          </Button>
+                        </Link>
+                        <Link to="/register">
+                          <Button className="w-full">Register</Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </SignedOut>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   );

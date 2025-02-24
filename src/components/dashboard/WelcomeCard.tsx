@@ -37,6 +37,7 @@ export default function WelcomeCard() {
   const { data: recentReturns, isLoading: isLoadingReturns } =
     trpc.getRecentReturns.useQuery(user?.id || "", {
       enabled: !!user?.id,
+      select: (data) => data?.slice(0, 5), // Limit to 5 items on the client side
     });
 
   if (!isLoaded) {

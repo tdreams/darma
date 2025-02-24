@@ -26,7 +26,6 @@ export default function Modal({
       const focusableElements = modalRef.current?.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
-
       if (focusableElements) {
         const firstElement = focusableElements[0] as HTMLElement;
         const lastElement = focusableElements[
@@ -69,11 +68,9 @@ export default function Modal({
         onClose();
       }
     }
-
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -86,11 +83,9 @@ export default function Modal({
         onClose();
       }
     }
-
     if (isOpen) {
       document.addEventListener("keydown", handleEscapeKey);
     }
-
     return () => {
       document.removeEventListener("keydown", handleEscapeKey);
     };
@@ -113,11 +108,14 @@ export default function Modal({
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full"
+            // Responsive container:
+            // On very small screens: max-w-sm, on small: max-w-md, on medium and up: max-w-lg.
+            // "w-full" ensures it takes full available width, and "mx-4" adds horizontal margins.
+            className="bg-white rounded-lg shadow-lg p-6 max-w-sm sm:max-w-md md:max-w-lg w-full mx-4"
           >
             <h2
               id="modal-title"
-              className="text-xl font-bold text-gray-800 mb-4"
+              className="text-xl font-bold text-blue-500 mb-4"
             >
               Access Restricted
             </h2>

@@ -117,7 +117,7 @@ export function Step5Review({ formData }: Step5props) {
         });
 
         // Redirect to success page
-        window.location.href = `${window.location.origin}/success?return_id=${paymentIntent.id}`;
+        window.location.href = `/success`;
       }
     } catch (err: any) {
       console.error("Payment/upload error:", err);
